@@ -4,14 +4,19 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.demobotapp.ui.theme.DemoBotAppTheme
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.demobotapp.ui.theme.*
+import com.example.demobotapp.ui.viewmodel.MainViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,29 +24,92 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             DemoBotAppTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                MainScreen()
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
+fun MainScreen(
+    viewModel: MainViewModel = viewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Bot Control Panel") },
+                actions = {
+                    IconButton(onClick = { viewModel.onRefresh() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            if (uiState.isRefreshing) {
+                CircularProgressIndicator(
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+            
+            Text(
+                text = "Control your bot with the buttons below",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(bottom = 32.dp)
+            )
+
+            Button(
+                onClick = { viewModel.onStartClick() },
+                modifier = Modifier
+                    .width(200.dp)
+                    .height(56.dp),
+                enabled = !uiState.isRunning && !uiState.isRefreshing,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = StartButton
+                )
+            ) {
+                Text("Start")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = { viewModel.onStopClick() },
+                modifier = Modifier
+                    .width(200.dp)
+                    .height(56.dp),
+                enabled = uiState.isRunning && !uiState.isRefreshing,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = StopButton
+                )
+            ) {
+                Text("Stop")
+            }
+        }
+    }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
+fun MainScreenPreview() {
     DemoBotAppTheme {
-        Greeting("Android")
+        MainScreen()
     }
 }
